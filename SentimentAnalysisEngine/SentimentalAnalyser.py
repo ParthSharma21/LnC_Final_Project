@@ -6,20 +6,19 @@ def analyze_sentiment(comment):
     sentiment_dict = analyzer.polarity_scores(comment)
     
     # Determine sentiment based on compound score
-    if sentiment_dict['compound'] >= 0.5:
-        # print(sentiment_dict['compound'])
-        sentiment = "Positive"
-    elif sentiment_dict['compound'] <= -0.5:
-        # print(sentiment_dict['compound'])
-        sentiment = "Negative"
-    else:
-        # print(sentiment_dict['compound'])
-        sentiment = "Neutral"
+    # if sentiment_dict['compound'] >= 0.5:
+    #     # print(sentiment_dict['compound'])
+    #     sentiment = "Positive"
+    # elif sentiment_dict['compound'] <= -0.5:
+    #     # print(sentiment_dict['compound'])
+    #     sentiment = "Negative"
+    # else:
+    #     # print(sentiment_dict['compound'])
+    #     sentiment = "Neutral"
     
-    return sentiment
+    return sentiment_dict['compound'] # sentiment
 
-# Example usage
-# comment = "I love this product! It's amazing."
+# comment = 'The parathas were amazing'
 # print(analyze_sentiment(comment))  # Output: Positive
 
 # comment = "This is the worst experience I've ever had."

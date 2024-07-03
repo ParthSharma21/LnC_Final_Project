@@ -84,7 +84,8 @@ def chefHandler(chefUser, client):
         print("1. View Menu")
         print("2. Rollout Tomorrow's Menu")
         print("3. Generate Report")
-        print("4. Logout")
+        print("4. Get Poor Performing Items")
+        print("5. Logout")
         
         choice = input("Enter your choice: ")
 
@@ -117,7 +118,7 @@ def chefHandler(chefUser, client):
                 for item in recommended_items:
                     print(f"ID: {item['foodItemID']}, Name: {item['foodItemName']}, Recommendation Score: {item['foodItemRecommendationScore']}")
 
-                items_to_rollout = input("Enter the IDs of the items to rollout, separated by spaces: ")
+                items_to_rollout = input("\nEnter the IDs of the items to rollout, separated by spaces: ")
                 request = {"action": "rolloutMenu", "foodItemIDs": items_to_rollout.split()}
                 client.send(json.dumps(request).encode('utf-8'))
 
@@ -153,6 +154,48 @@ def chefHandler(chefUser, client):
                 print(response["message"])
 
         elif choice == '4':
+            request = {"action": "getPoorPerformingItems", "userID": chefUser.userID}
+            client.send(json.dumps(request).encode('utf-8'))
+
+            response = client.recv(4096).decode('utf-8')
+            response = json.loads(response)
+
+            if response["status"] == "success":
+                poor_items = response["data"]
+                print("\nPoor Performing Items:")
+                for item in poor_items:
+                    print(f"Id: {item['FoodItemID']}, Name: {item['FoodItemName']}, AverageRating: {item['AverageRating']}, AverageSentiment: {item['AverageSentiment']}")
+                
+                
+                item_id = input("\nEnter the ID of the food item you want to interact with: ")
+                print("\nOptions:")
+                print("1. Discard Food Item")
+                print("2. Ask Employees for Detailed Review")
+                action_choice = input("Enter your choice: ")
+
+                if action_choice == '1':
+                    request = {"action": "discardFoodItem", "foodItemID": item_id}
+                    client.send(json.dumps(request).encode('utf-8'))
+
+                    response = client.recv(1024).decode('utf-8')
+                    response = json.loads(response)
+                    print(response["message"])
+
+                elif action_choice == '2':
+                    request = {"action": "requestDetailedReview", "foodItemID": item_id, "userID": chefUser.userID}
+                    client.send(json.dumps(request).encode('utf-8'))
+
+                    response = client.recv(1024).decode('utf-8')
+                    response = json.loads(response)
+                    print(response["message"])
+
+                else:
+                    print("Invalid choice. Please enter a valid option.")
+
+            else:
+                print(response["message"])
+
+        elif choice == '5':
             print("Logging out...")
             return
         

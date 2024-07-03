@@ -2,10 +2,10 @@
 import Server.databaseFunctions as df
 from decimal import Decimal
 
-def decimal_to_float(obj):
-    if isinstance(obj, Decimal):
-        return float(obj)
-    return obj
+def decimal_to_float(number):
+    if isinstance(number, Decimal):
+        return float(number)
+    return number
 
 def getRecommendedFoodItems():
     connection = df.start_connection()
@@ -21,8 +21,9 @@ def getRecommendedFoodItems():
                 m.FoodItemName, 
                 m.FoodItemPrice, 
                 IFNULL(AVG(f.FoodReviewRating), 0) AS AvgRating, 
+                IFNULL(AVG(f.Sentiment), 0) AS AvgSentiment,
                 COUNT(uo.FoodItemID) AS OrderCount,
-                (1.5 * IFNULL(AVG(f.FoodReviewRating), 0) + 0.5 * COUNT(uo.FoodItemID)) AS RecommendationScore
+                (1.5 * IFNULL(AVG(f.FoodReviewRating), 0) + 0.5 * IFNULL(AVG(f.Sentiment), 0)) AS RecommendationScore
             FROM 
                 Menu m
             LEFT JOIN 
@@ -49,16 +50,14 @@ def getRecommendedFoodItems():
                 "foodItemName": item[1],
                 "foodItemPrice": decimal_to_float(item[2]),
                 "foodItemAverageRating": decimal_to_float(item[3]),
-                "foodItemBoughtCount": item[4],
-                "foodItemRecommendationScore": decimal_to_float(item[5])
+                "foodItemAverageSentiment": decimal_to_float(item[4]),
+                "foodItemBoughtCount": item[5],
+                "foodItemRecommendationScore": round(decimal_to_float(item[6]), 2)
             })
 
         return {"status": "success", "data": recommended_items_list}
     else:
         return {"status": "success", "data": "No Recommendation."}
-    
-
-
 
 # Test the function
 # print(getRecommendedFoodItems())

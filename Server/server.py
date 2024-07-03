@@ -7,6 +7,7 @@ import Server.authenticationAndLogin as Login
 import Server.databaseFunctions as db
 import serverFunctions as sf
 import RecommendationEngine.RecommendationEngine as re
+import detailedReviewHandler as drh
 
 # Server host and port
 HOST = '127.0.0.1'
@@ -44,6 +45,13 @@ def handle_client(client_socket, client_address):
                 response = sf.notifyEmployees(request_data)
             elif action == 'generateReport':
                 response = sf.generateReport()
+            elif action == 'getPoorPerformingItems':
+                response = drh.get_poor_performing_items(request_data.get('threshold', 2), request_data.get('days', 30))
+            elif action == "discardFoodItem":
+                response = drh.discard_food_item(request_data)
+            elif action == "requestDetailedReview":
+                response = drh.request_detailed_review(request_data)
+            
 
 
             elif action == 'viewDailyMenu':
