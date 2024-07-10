@@ -1,5 +1,3 @@
-#######    server.py
-
 import socket
 import threading
 import json
@@ -9,6 +7,9 @@ import serverFunctions as sf
 import RecommendationEngine.RecommendationEngine as re
 import detailedReviewHandler as drh
 import foodPreferenceUpdate as fpu
+import adminController as ac
+import chefController as cc
+import employeeController as ec
 
 # Server host and port
 HOST = '127.0.0.1'
@@ -28,55 +29,50 @@ def handle_client(client_socket, client_address):
             
             if action == 'login':
                 response = sf.handle_login(request_data)
+                
             elif action == 'addFoodItem':
-                response = sf.handle_add_food_item(request_data)
+                response = ac.handle_add_food_item(request_data)
             elif action == 'updateFoodItem':
-                response = sf.handle_update_food_item(request_data)
+                response = ac.handle_update_food_item(request_data)
             elif action == 'deleteFoodItem':
-                response = sf.handle_delete_food_item(request_data)
+                response = ac.handle_delete_food_item(request_data)
             elif action == 'viewMenu':
-                response = sf.handle_view_menu()
+                response = ac.handle_view_menu()
 
-            
             elif action == 'getRecommendedFoodItems':
-                response = re.getRecommendedFoodItems()
+                response = cc.getRecommendedFoodItems()
             elif action == 'rolloutMenu':
-                response = sf.rolloutMenu(request_data)
+                response = cc.rolloutMenu(request_data)
             elif action == 'notifyEmployees':
-                response = sf.notifyEmployees(request_data)
+                response = cc.notifyEmployees(request_data)
             elif action == 'generateReport':
-                response = sf.generateReport()
+                response = cc.generateReport()
             elif action == 'getPoorPerformingItems':
-                response = drh.get_poor_performing_items(request_data.get('threshold', 2), request_data.get('days', 30))
+                response = cc.getPoorPerformingItems(request_data)
             elif action == "discardFoodItem":
-                response = drh.discard_food_item(request_data)
+                response = cc.discardFoodItem(request_data)
             elif action == "requestDetailedReview":
-                response = drh.request_detailed_review(request_data)
+                response = cc.requestDetailedReview(request_data)
             
-
-
             elif action == 'viewDailyMenu':
-                response = sf.handle_view_daily_menu(request_data)
+                response = ec.viewDailyMenu(request_data)
             elif action == 'viewNotifications':
-                response = sf.handle_view_notifications()
+                response = ec.viewNotifications()
             elif action == 'orderFood':
-                response = sf.handle_order_food(request_data)
+                response = ec.orderFood(request_data)
             elif action == 'giveFeedback':
-                response = sf.handle_give_feedback(request_data)
+                response = ec.giveFeedback(request_data)
             elif action == 'requestFeedbackItems':
-                response = sf.handle_request_feedback_items(request_data)
+                response = ec.requestFeedbackItems(request_data)
             elif action == 'check_detailed_feedback':
-                response = drh.check_detailed_feedback(request_data)
+                response = ec.checkDetailedFeedback(request_data)
             elif action == 'submit_detailed_feedback':
-                response = drh.submit_detailed_feedback(request_data)
+                response = ec.submitDetailedFeedback(request_data)
             elif action == 'updateProfile':
                 response = fpu.update_profile(request_data)
 
-
             else:
                 response = {"status": "error", "message": "Invalid action"}
-
-            # Respond to the client
 
             print(response)
             response_json = json.dumps(response)
@@ -87,7 +83,6 @@ def handle_client(client_socket, client_address):
 
     print(f"[DISCONNECTED] {client_address} disconnected.")
     client_socket.close()
-
 
 def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

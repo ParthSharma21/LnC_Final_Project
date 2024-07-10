@@ -19,19 +19,14 @@ def Authenticate(UserType, UserID, UserPassword):
 
     cursor = connection.cursor()
     
-    # Create SQL query
     query = "SELECT * FROM user WHERE UserRole = %s AND UserID = %s AND UserPassword = %s"
     
-    # Execute the query
     cursor.execute(query, (UserType, UserID, UserPassword))
     
-    # Fetch one result
     result = cursor.fetchone()
     
-    # Close the database connection
     df.close_connection(connection)
     
-    # Check if a result is returned
     if result:
         return {"status": "success", "data": result}
     else:
@@ -49,7 +44,7 @@ def EmployeeLogin(EmployeeID, EmployeePassword):
     AuthenticationResponse = Authenticate("Employee", EmployeeID, EmployeePassword)
     return AuthenticationResponse
 
-# Example usage
+
 if __name__ == "__main__":
     user_type = int(input("Enter User Type (1 for Admin, 2 for Chef, 3 for Employee): "))
     UserLogin(user_type)

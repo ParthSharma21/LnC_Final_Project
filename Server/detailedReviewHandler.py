@@ -48,7 +48,6 @@ def discard_food_item(request_data):
 
         cursor = connection.cursor()
 
-        # Get the average rating and sentiment for the food item
         query = """
             SELECT AVG(f.FoodReviewRating) AS AvgRating, AVG(f.Sentiment) AS AvgSentiment
             FROM Feedback f
@@ -59,18 +58,15 @@ def discard_food_item(request_data):
         avg_rating = result[0] if result[0] is not None else 0
         avg_sentiment = result[1] if result[1] is not None else 0
 
-        # Get food item name
         cursor.execute("SELECT FoodItemName FROM Menu WHERE FoodItemID = %s AND IsDiscarded = FALSE", (food_item_id,))
         food_item_name = cursor.fetchone()[0]
 
-        # Insert into DiscardMenuItems
         insert_query = """
             INSERT INTO DiscardMenuItems (FoodItemID, FoodItemName, AvgRating, AvgSentiment, DiscardDate)
             VALUES (%s, %s, %s, %s, NOW())
         """
         cursor.execute(insert_query, (food_item_id, food_item_name, avg_rating, avg_sentiment))
 
-        # Mark as discarded in the Menu table
         update_menu_query = "UPDATE Menu SET IsDiscarded = TRUE WHERE FoodItemID = %s"
         cursor.execute(update_menu_query, (food_item_id,))
 
@@ -119,11 +115,9 @@ def request_detailed_review(request_data):
 
         cursor = connection.cursor()
 
-        # Fetch food item name for notification
         cursor.execute("SELECT FoodItemName FROM Menu WHERE FoodItemID = %s AND IsDiscarded = FALSE", (food_item_id,))
         food_item_name = cursor.fetchone()[0]
 
-        # Generate notification
         notification_message = f"Chef has requested detailed review for {food_item_name}."
         notification_response = generate_notification(user_id, notification_message)
         if notification_response["status"] == "error":
@@ -131,7 +125,6 @@ def request_detailed_review(request_data):
 
         notification_id = notification_response["notification_id"]
 
-        # Insert into DetailedReviewRequiredItem
         query = """
             INSERT INTO DetailedReviewRequiredItem(FoodItemID, FoodItemName, NotificationID)
             VALUES (%s, %s, %s)

@@ -20,7 +20,6 @@ def handle_add_food_item(request_data):
 
         cursor = connection.cursor()
 
-        # Extract food item details from request_data
         food_item = {
             "FoodItemName": request_data['foodItemName'],
             "FoodItemPrice": request_data['foodItemPrice'],
@@ -28,16 +27,10 @@ def handle_add_food_item(request_data):
             "IsDiscarded": False
         }
 
-        # Create SQL query
         query = "INSERT INTO Menu (FoodItemName, FoodItemPrice, FoodItemAvailability, IsDiscarded) VALUES (%s, %s, %s, %s)"
-        
-        # Execute the query
         cursor.execute(query, (food_item['FoodItemName'], food_item['FoodItemPrice'], food_item['FoodItemAvailability'], food_item['IsDiscarded']))
-        
-        # Commit changes to the database
         connection.commit()
 
-        # Close the cursor and connection
         cursor.close()
         db.close_connection(connection)
 
@@ -54,7 +47,6 @@ def handle_update_food_item(request_data):
 
         cursor = connection.cursor()
 
-        # Extract food item details from request_data
         food_item = {
             "FoodItemID": request_data['foodItemID'],
             "FoodItemName": request_data['foodItemName'],
@@ -62,16 +54,10 @@ def handle_update_food_item(request_data):
             "FoodItemAvailability": request_data['foodItemAvailability']
         }
 
-        # Create SQL query to update the existing record
         query = "UPDATE Menu SET FoodItemName = %s, FoodItemPrice = %s, FoodItemAvailability = %s WHERE FoodItemID = %s"
-        
-        # Execute the query
         cursor.execute(query, (food_item['FoodItemName'], food_item['FoodItemPrice'], food_item['FoodItemAvailability'], food_item['FoodItemID']))
-        
-        # Commit changes to the database
         connection.commit()
 
-        # Close the cursor and connection
         cursor.close()
         db.close_connection(connection)
 
@@ -126,21 +112,17 @@ def rolloutMenu(request_data):
         foodItemsToRollOutIDs = request_data['foodItemIDs']
 
         connection = db.start_connection()
-
         if not connection:
             return {"status": "error", "message": "Database connection failed"}
 
         cursor = connection.cursor()
         cursor.execute("TRUNCATE TABLE DailyMenu")
-        
-        # Insert the selected items into DailyMenu
         for item_id in foodItemsToRollOutIDs:
             cursor.execute(
                 "INSERT INTO DailyMenu (FoodItemID, FoodItemName, FoodItemPrice) "
                 "SELECT FoodItemID, FoodItemName, FoodItemPrice FROM Menu WHERE FoodItemID = %s AND IsDiscarded = FALSE", 
                 (item_id,)
             )
-
         connection.commit()
 
         cursor.close()
@@ -219,15 +201,13 @@ def generateReport():
 
 def handle_view_daily_menu(request_data):
     try:
-        user_id = request_data['userID']  # Get the user ID from the request data
+        user_id = request_data['userID']
 
         connection = db.start_connection()
         if not connection:
             return {"status": "error", "message": "Database connection failed"}
 
         cursor = connection.cursor()
-
-        # Query to get the user's preferences
         cursor.execute("""
             SELECT FoodType, SpiceLevel, IsSweet, CusineType
             FROM UserPreference
@@ -240,7 +220,6 @@ def handle_view_daily_menu(request_data):
 
         food_type, spice_level, is_sweet, cusine_type = user_preferences
 
-        # Query to get the daily menu sorted by user's preferences
         query = """
             SELECT dm.FoodItemID, dm.FoodItemName, dm.FoodItemPrice,
                 (CASE WHEN fd.FoodType = %s THEN 1 ELSE 0 END +
@@ -284,24 +263,18 @@ def handle_view_notifications():
         return {"status": "error", "message": str(e)}
 
 def handle_order_food(request_data):
-    print(request_data)
     try:
         food_item_ids = request_data['foodItemIDs']
         user_id = request_data['userID']
-        print("---",user_id)
 
         connection = db.start_connection()
         if not connection:
             return {"status": "error", "message": "Database connection failed"}
 
         cursor = connection.cursor()
-
-        # Create a new order
         cursor.execute("INSERT INTO Orders (UserID, OrderDate) VALUES (%s, %s)", (user_id, datetime.now().date()))
-        
-        id_for_this_order = cursor.lastrowid  # Get the last inserted OrderID
+        id_for_this_order = cursor.lastrowid
 
-        # Insert each food item into the order details
         for food_item_id in food_item_ids:
             cursor.execute("INSERT INTO UserOrderDetails (OrderID, FoodItemID) VALUES (%s, %s)", (id_for_this_order, food_item_id))
 
@@ -382,7 +355,7 @@ def get_last_order_details(user_id):
         cursor.execute(query, (user_id,))
         order_details = cursor.fetchone()
         if order_details:
-            return order_details[0], order_details[1]  # OrderID, OrderDate
+            return order_details[0], order_details[1]
         else:
             return None, "No orders found."
     except Exception as e:
@@ -432,7 +405,7 @@ def insert_feedback(user_id, order_id, food_item_id, rating, comments, order_dat
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
     try:
-        sentiment_value = sentiment.analyze_sentiment(comments)  # Assuming sentiment is a module with analyze_sentiment function
+        sentiment_value = sentiment.analyze_sentiment(comments)
         cursor.execute(query, (user_id, order_id, food_item_id, rating, comments, order_date, sentiment_value))
         connection.commit()
         return "Feedback submitted successfully!"
@@ -449,22 +422,18 @@ def handle_give_feedback(request_data):
         rating = request_data['rating']
         comments = request_data['comments']
 
-        # Get last order details
         order_id, order_date_message = get_last_order_details(user_id)
         if not order_id:
             return {"status": "error", "message": order_date_message}
 
-        # Check if feedback already exists for this item
         ordered_items = get_ordered_food_items(order_id, user_id)
         if not ordered_items:
             return {"status": "error", "message": "No items found in the last order or feedback already given for all items."}
 
-        # Check if the item is in the list of ordered items
         item_exists = any(item['FoodItemID'] == food_item_id for item in ordered_items)
         if not item_exists:
             return {"status": "error", "message": "Invalid food item ID or feedback already given for this item."}
 
-        # Insert feedback
         feedback_message = insert_feedback(user_id, order_id, food_item_id, rating, comments, order_date_message)
         if "successfully" in feedback_message:
             return {"status": "success", "message": feedback_message}

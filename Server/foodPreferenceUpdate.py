@@ -16,12 +16,11 @@ def update_profile(request_data):
 
         cursor = connection.cursor()
 
-        # Check if the user already has a profile
         cursor.execute("SELECT UserPreferenceID FROM UserPreference WHERE UserID = %s", (user_id,))
         result = cursor.fetchone()
 
         if result:
-            # Update existing profile
+
             query = """
                 UPDATE UserPreference
                 SET FoodType = %s, SpiceLevel = %s, IsSweet = %s, CusineType = %s
@@ -29,7 +28,7 @@ def update_profile(request_data):
             """
             cursor.execute(query, (food_type, spice_level, sweet_preference, cuisine_type, user_id))
         else:
-            # Insert new profile
+
             query = """
                 INSERT INTO UserPreference (UserID, FoodType, SpiceLevel, IsSweet, CusineType)
                 VALUES (%s, %s, %s, %s, %s)
