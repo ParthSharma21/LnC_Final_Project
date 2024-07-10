@@ -209,12 +209,14 @@ def employeeHandler(employeeUser, client):
         print("2. View Notifications")
         print("3. Order Food")
         print("4. Provide Feedback")
-        print("5. Logout")
+        print("5. Provide Detailed Feedback")
+        print("6. Update Profile")
+        print("7. Logout")
         
         choice = input("Enter your choice: ")
 
         if choice == '1':
-            request = {"action": "viewDailyMenu"}
+            request = {"action": "viewDailyMenu", "userID": employeeUser.userID}
             client.send(json.dumps(request).encode('utf-8'))
             
             response = client.recv(4096).decode('utf-8')
@@ -292,6 +294,87 @@ def employeeHandler(employeeUser, client):
 
 
         elif choice == '5':
+            request = {'action': 'check_detailed_feedback', 'UserID': employeeUser.userID}
+            client.send(json.dumps(request).encode('utf-8'))
+            response = client.recv(4096).decode('utf-8')
+            response = json.loads(response)
+
+            if not response['items']:
+                print("No items require detailed feedback at the moment.")
+                
+            else:
+                for item in response['items']:
+                    foodItemName = item[0]
+                    notificationId = item[1]
+                    foodItemId = item[2]
+
+                    print(f"\nDetailed Feedback for {foodItemName}")
+                    answerToQuestion1 = input("Q1. What didn't you like about the food item? ")
+                    answerToQuestion2 = input("Q2. How would you like the food item to taste? ")
+                    answerToQuestion3 = input("Q3. Share your mom's recipe: ")
+
+                    detailedFeedback = [
+                        {'AnswerToQueID': 1, 'DetailedFeedback': answerToQuestion1},
+                        {'AnswerToQueID': 2, 'DetailedFeedback': answerToQuestion2},
+                        {'AnswerToQueID': 3, 'DetailedFeedback': answerToQuestion3},
+                    ]
+
+                    client.send(json.dumps({
+                        'action': 'submit_detailed_feedback',
+                        'UserID': employeeUser.userID,
+                        'NotificationID': notificationId,
+                        'FoodItemID': foodItemId,
+                        'detailedFeedback': detailedFeedback
+                    }).encode('utf-8'))
+
+                    server_response = client.recv(1024).decode('utf-8')
+                    server_response = json.loads(server_response)
+                    if server_response['status'] == 'success':
+                        print(f"Detailed feedback for {foodItemName} submitted successfully.")
+                    else:
+                        print(f"Failed to submit detailed feedback for {foodItemName}.")
+
+        elif choice == '6':
+            print("\nUpdate Your Profile")
+
+            print("1) Please select one-")
+            print("1. Vegetarian")
+            print("2. Non Vegetarian")
+            print("3. Eggetarian")
+            food_type = input("Enter your choice (1/2/3): ")
+
+            print("2) Please select your spice level")
+            print("1. Low")
+            print("2. Medium")
+            print("3. High")
+            spice_level = input("Enter your choice (1/2/3): ")
+
+            print("3) What do you prefer most?")
+            print("1. North Indian")
+            print("2. South Indian")
+            print("3. Other")
+            cuisine_type = input("Enter your choice (1/2/3): ")
+
+            print("4) Do you have a sweet tooth?")
+            print("1. Yes")
+            print("2. No")
+            sweet_preference = input("Enter your choice (1/2): ")
+
+            profile_data = {
+                "action": "updateProfile",
+                "userID": employeeUser.userID,
+                "foodType": food_type,
+                "spiceLevel": spice_level,
+                "cuisineType": cuisine_type,
+                "sweetPreference": sweet_preference
+            }
+
+            client.send(json.dumps(profile_data).encode('utf-8'))
+            response = client.recv(1024).decode('utf-8')
+            response = json.loads(response)
+            print(response["message"])
+
+        elif choice == '7':
             print("Logging out...")
             return
 

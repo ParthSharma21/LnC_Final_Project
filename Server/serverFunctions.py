@@ -1,5 +1,3 @@
-######## serverFunctions.py
-
 import Server.authenticationAndLogin as Login
 import Server.databaseFunctions as db
 from datetime import datetime, timedelta
@@ -26,14 +24,15 @@ def handle_add_food_item(request_data):
         food_item = {
             "FoodItemName": request_data['foodItemName'],
             "FoodItemPrice": request_data['foodItemPrice'],
-            "FoodItemAvailability": 1
+            "FoodItemAvailability": 1,
+            "IsDiscarded": False
         }
 
         # Create SQL query
-        query = "INSERT INTO menu (FoodItemName, FoodItemPrice, FoodItemAvailability) VALUES (%s, %s, %s)"
+        query = "INSERT INTO Menu (FoodItemName, FoodItemPrice, FoodItemAvailability, IsDiscarded) VALUES (%s, %s, %s, %s)"
         
         # Execute the query
-        cursor.execute(query, (food_item['FoodItemName'], food_item['FoodItemPrice'], food_item['FoodItemAvailability']))
+        cursor.execute(query, (food_item['FoodItemName'], food_item['FoodItemPrice'], food_item['FoodItemAvailability'], food_item['IsDiscarded']))
         
         # Commit changes to the database
         connection.commit()
@@ -46,7 +45,6 @@ def handle_add_food_item(request_data):
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
-
 
 def handle_update_food_item(request_data):
     try:
@@ -65,7 +63,7 @@ def handle_update_food_item(request_data):
         }
 
         # Create SQL query to update the existing record
-        query = "UPDATE menu SET FoodItemName = %s, FoodItemPrice = %s, FoodItemAvailability = %s WHERE FoodItemID = %s"
+        query = "UPDATE Menu SET FoodItemName = %s, FoodItemPrice = %s, FoodItemAvailability = %s WHERE FoodItemID = %s"
         
         # Execute the query
         cursor.execute(query, (food_item['FoodItemName'], food_item['FoodItemPrice'], food_item['FoodItemAvailability'], food_item['FoodItemID']))
@@ -82,8 +80,6 @@ def handle_update_food_item(request_data):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-
-
 def handle_delete_food_item(request_data):
     try:
         connection = db.start_connection()
@@ -94,7 +90,7 @@ def handle_delete_food_item(request_data):
 
         food_item_id = request_data['foodItemID']
 
-        query = "DELETE FROM menu WHERE FoodItemID = %s"
+        query = "DELETE FROM Menu WHERE FoodItemID = %s"
         cursor.execute(query, (food_item_id,))
         connection.commit()
 
@@ -113,7 +109,7 @@ def handle_view_menu():
             return {"status": "error", "message": "Database connection failed"}
 
         cursor = connection.cursor()
-        query = "SELECT FoodItemID, FoodItemName, FoodItemPrice, FoodItemAvailability FROM menu"
+        query = "SELECT FoodItemID, FoodItemName, FoodItemPrice, FoodItemAvailability FROM Menu WHERE IsDiscarded = FALSE"
         cursor.execute(query)
         menu = cursor.fetchall()
         print(menu)
@@ -124,8 +120,6 @@ def handle_view_menu():
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
-    
-
 
 def rolloutMenu(request_data):
     try:
@@ -143,7 +137,7 @@ def rolloutMenu(request_data):
         for item_id in foodItemsToRollOutIDs:
             cursor.execute(
                 "INSERT INTO DailyMenu (FoodItemID, FoodItemName, FoodItemPrice) "
-                "SELECT FoodItemID, FoodItemName, FoodItemPrice FROM Menu WHERE FoodItemID = %s", 
+                "SELECT FoodItemID, FoodItemName, FoodItemPrice FROM Menu WHERE FoodItemID = %s AND IsDiscarded = FALSE", 
                 (item_id,)
             )
 
@@ -156,9 +150,6 @@ def rolloutMenu(request_data):
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
-
-
-
 
 def notifyEmployees(request_data):
     try:
@@ -182,9 +173,6 @@ def notifyEmployees(request_data):
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
-    
-
-
 
 def generateReport():
     try:
@@ -207,6 +195,7 @@ def generateReport():
                 Menu m ON uod.FoodItemID = m.FoodItemID
             WHERE 
                 o.OrderDate >= %s
+                AND m.IsDiscarded = FALSE
             GROUP BY 
                 m.FoodItemName
             ORDER BY 
@@ -227,20 +216,44 @@ def generateReport():
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
-    
 
-
-
-def handle_view_daily_menu():
+def handle_view_daily_menu(request_data):
     try:
+        user_id = request_data['userID']  # Get the user ID from the request data
+
         connection = db.start_connection()
         if not connection:
             return {"status": "error", "message": "Database connection failed"}
 
         cursor = connection.cursor()
-        query = "SELECT FoodItemID, FoodItemName, FoodItemPrice FROM DailyMenu"
-        cursor.execute(query)
+
+        # Query to get the user's preferences
+        cursor.execute("""
+            SELECT FoodType, SpiceLevel, IsSweet, CusineType
+            FROM UserPreference
+            WHERE UserID = %s
+        """, (user_id,))
+        user_preferences = cursor.fetchone()
+
+        if not user_preferences:
+            return {"status": "error", "message": "User preferences not found"}
+
+        food_type, spice_level, is_sweet, cusine_type = user_preferences
+
+        # Query to get the daily menu sorted by user's preferences
+        query = """
+            SELECT dm.FoodItemID, dm.FoodItemName, dm.FoodItemPrice,
+                (CASE WHEN fd.FoodType = %s THEN 1 ELSE 0 END +
+                 CASE WHEN fd.SpiceLevel = %s THEN 1 ELSE 0 END +
+                 CASE WHEN fd.IsSweet = %s THEN 1 ELSE 0 END +
+                 CASE WHEN fd.CusineType = %s THEN 1 ELSE 0 END) AS PreferenceScore
+            FROM DailyMenu dm
+            JOIN FoodDetails fd ON dm.FoodItemID = fd.FoodItemID
+            ORDER BY PreferenceScore DESC, dm.FoodItemName
+        """
+        cursor.execute(query, (food_type, spice_level, is_sweet, cusine_type))
         daily_menu = cursor.fetchall()
+
         cursor.close()
         db.close_connection(connection)
 
@@ -269,9 +282,6 @@ def handle_view_notifications():
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
-    
-
-
 
 def handle_order_food(request_data):
     print(request_data)
@@ -303,11 +313,6 @@ def handle_order_food(request_data):
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
-    
-
-
-
-
 
 def handle_request_feedback_items(request_data):
     try:
@@ -338,6 +343,7 @@ def handle_request_feedback_items(request_data):
             FROM UserOrderDetails uod
             JOIN Menu m ON uod.FoodItemID = m.FoodItemID
             WHERE uod.OrderID = %s
+            AND m.IsDiscarded = FALSE
             AND uod.FoodItemID NOT IN (
                 SELECT FoodItemID FROM Feedback
                 WHERE UserID = %s AND OrderID = %s
@@ -358,8 +364,6 @@ def handle_request_feedback_items(request_data):
     
     except Exception as e:
         return {"status": "error", "message": str(e)}
-    
-
 
 def get_last_order_details(user_id):
     connection = db.start_connection()
@@ -398,6 +402,7 @@ def get_ordered_food_items(order_id, user_id):
         FROM UserOrderDetails uod
         JOIN Menu m ON uod.FoodItemID = m.FoodItemID
         WHERE uod.OrderID = %s
+        AND m.IsDiscarded = FALSE
         AND uod.FoodItemID NOT IN (
             SELECT FoodItemID FROM Feedback
             WHERE UserID = %s AND OrderID = %s
@@ -437,11 +442,6 @@ def insert_feedback(user_id, order_id, food_item_id, rating, comments, order_dat
         cursor.close()
         db.close_connection(connection)
 
-
-
-
-
-
 def handle_give_feedback(request_data):
     try:
         user_id = request_data['userID']
@@ -473,196 +473,3 @@ def handle_give_feedback(request_data):
     
     except Exception as e:
         return {"status": "error", "message": str(e)}
-
-
-
-
-
-# def handle_request_feedback_items(request_data):
-#     try:
-#         user_id = request_data['userID']
-        
-#         connection = db.start_connection()
-#         if not connection:
-#             return {"status": "error", "message": "Database connection failed"}
-        
-#         print(user_id)
-
-#         cursor = connection.cursor()
-        
-#         query_last_order = """
-#             SELECT OrderID, OrderDate
-#             FROM Orders
-#             WHERE UserID = %s
-#             ORDER BY OrderDate DESC, OrderID DESC
-#             LIMIT 1
-#         """
-#         cursor.execute(query_last_order, (user_id,))
-#         last_order = cursor.fetchone()
-#         if not last_order:
-#             return {"status": "error", "message": "No orders found"}
-        
-#         print(last_order)
-        
-#         order_id, order_date = last_order
-        
-#         query_ordered_items = """
-#             SELECT m.FoodItemID, m.FoodItemName
-#             FROM UserOrderDetails uod
-#             JOIN Menu m ON uod.FoodItemID = m.FoodItemID
-#             WHERE uod.OrderID = %s
-#             AND uod.FoodItemID NOT IN (
-#                 SELECT FoodItemID FROM Feedback
-#                 WHERE UserID = %s AND OrderID = %s
-#             )
-#         """
-#         cursor.execute(query_ordered_items, (order_id, user_id, order_id))
-#         # query_ordered_items = """
-#         #     SELECT m.FoodItemID, m.FoodItemName
-#         #     FROM UserOrderDetails uod
-#         #     JOIN Menu m ON uod.FoodItemID = m.FoodItemID
-#         #     WHERE uod.OrderID = %s
-#         #     AND uod.FoodItemID NOT IN (
-#         #         SELECT FoodItemID FROM Feedback
-#         #         WHERE UserID = %s AND OrderID = %s
-#         #     )
-#         #     AND uod.OrderID IN (
-#         #         SELECT OrderID FROM Orders WHERE UserID = %s AND OrderDate = %s
-#         #     )
-#         # """
-#         # cursor.execute(query_ordered_items, (order_id, user_id, order_id, user_id, order_date))
-        
-#         items_to_feedback = cursor.fetchall()
-
-#         if not items_to_feedback:
-#             return {"status": "success", "data": [], "message": "No items pending feedback for the last order"}
-        
-#         items_list = [{"FoodItemID": item[0], "FoodItemName": item[1]} for item in items_to_feedback]
-        
-#         print("----",items_list)
-
-#         cursor.close()
-#         db.close_connection(connection)
-        
-#         return {"status": "success", "data": items_list}
-    
-#     except Exception as e:
-#         return {"status": "error", "message": str(e)}
-
-# def handle_give_feedback(request_data):
-#     try:
-#         user_id = request_data['userID']
-#         food_item_id = request_data['foodItemID']
-#         rating = request_data['rating']
-#         comments = request_data['comments']
-        
-#         connection = db.start_connection()
-#         if not connection:
-#             return {"status": "error", "message": "Database connection failed"}
-
-#         cursor = connection.cursor()
-        
-#         query_last_order = """
-#             SELECT OrderID, OrderDate
-#             FROM Orders
-#             WHERE UserID = %s
-#             ORDER BY OrderDate DESC
-#             LIMIT 1
-#         """
-#         cursor.execute(query_last_order, (user_id,))
-#         last_order = cursor.fetchone()
-#         if not last_order:
-#             return {"status": "error", "message": "No orders found"}
-        
-#         order_id, order_date = last_order
-        
-#         query_insert_feedback = """
-#             INSERT INTO Feedback (UserID, OrderID, FoodItemID, FoodReviewRating, FoodReviewComments, FoodReviewDate, Sentiment)
-#             VALUES (%s, %s, %s, %s, %s, %s)
-#         """
-#         cursor.execute(query_insert_feedback, (user_id, order_id, food_item_id, rating, comments, order_date, sentiment.analyze_sentiment(comments)))
-#         connection.commit()
-        
-#         cursor.close()
-#         db.close_connection(connection)
-        
-#         return {"status": "success", "message": "Feedback submitted successfully!"}
-    
-#     except Exception as e:
-#         return {"status": "error", "message": str(e)}
-    
-
-
-
-# def handle_give_feedback(request_data):
-#     try:
-#         user_id = request_data['userID']
-#         food_item_id = request_data['foodItemID']
-#         rating = request_data['rating']
-#         comments = request_data['comments']
-        
-#         # Step 1: Retrieve last order details
-#         connection = db.start_connection()
-#         if not connection:
-#             return {"status": "error", "message": "Database connection failed"}
-
-#         cursor = connection.cursor()
-        
-#         query_last_order = """
-#             SELECT OrderID, OrderDate
-#             FROM Orders
-#             WHERE UserID = %s
-#             ORDER BY OrderDate DESC
-#             LIMIT 1
-#         """
-#         cursor.execute(query_last_order, (user_id,))
-#         last_order = cursor.fetchone()
-#         if not last_order:
-#             return {"status": "error", "message": "No orders found"}
-        
-#         order_id, order_date = last_order
-        
-#         # Step 2: Retrieve items in that order
-#         query_ordered_items = """
-#             SELECT FoodItemID
-#             FROM UserOrderDetails
-#             WHERE OrderID = %s
-#         """
-#         cursor.execute(query_ordered_items, (order_id,))
-#         ordered_items = cursor.fetchall()
-#         if not ordered_items:
-#             return {"status": "error", "message": "No items found in the last order"}
-        
-#         ordered_items = [item[0] for item in ordered_items]
-        
-#         # Step 3: Check if feedback already exists for this item
-#         if food_item_id not in ordered_items:
-#             return {"status": "error", "message": "The item was not part of the last order"}
-        
-#         query_existing_feedback = """
-#             SELECT FeedbackID
-#             FROM Feedback
-#             WHERE UserID = %s AND OrderID = %s AND FoodItemID = %s
-#         """
-#         cursor.execute(query_existing_feedback, (user_id, order_id, food_item_id))
-#         existing_feedback = cursor.fetchone()
-        
-#         if existing_feedback:
-#             return {"status": "error", "message": "Feedback already provided for this item"}
-        
-#         # Step 4: Insert feedback into Feedback table
-#         query_insert_feedback = """
-#             INSERT INTO Feedback (UserID, OrderID, FoodItemID, FoodReviewRating, FoodReviewComments, FoodReviewDate)
-#             VALUES (%s, %s, %s, %s, %s, %s)
-#         """
-#         cursor.execute(query_insert_feedback, (user_id, order_id, food_item_id, rating, comments, order_date))
-#         connection.commit()
-        
-#         cursor.close()
-#         db.close_connection(connection)
-        
-#         return {"status": "success", "message": "Feedback submitted successfully!"}
-    
-#     except Exception as e:
-#         return {"status": "error", "message": str(e)}
-

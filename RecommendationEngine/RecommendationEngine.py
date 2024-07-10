@@ -1,4 +1,3 @@
-# RecommendationEngine.py
 import Server.databaseFunctions as df
 from decimal import Decimal
 
@@ -32,6 +31,7 @@ def getRecommendedFoodItems():
                 UserOrderDetails uo ON m.FoodItemID = uo.FoodItemID
             WHERE 
                 m.FoodItemAvailability = 1
+                AND m.IsDiscarded = FALSE
             GROUP BY 
                 m.FoodItemID
             ORDER BY 

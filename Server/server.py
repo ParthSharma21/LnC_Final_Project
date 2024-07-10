@@ -8,6 +8,7 @@ import Server.databaseFunctions as db
 import serverFunctions as sf
 import RecommendationEngine.RecommendationEngine as re
 import detailedReviewHandler as drh
+import foodPreferenceUpdate as fpu
 
 # Server host and port
 HOST = '127.0.0.1'
@@ -55,7 +56,7 @@ def handle_client(client_socket, client_address):
 
 
             elif action == 'viewDailyMenu':
-                response = sf.handle_view_daily_menu()
+                response = sf.handle_view_daily_menu(request_data)
             elif action == 'viewNotifications':
                 response = sf.handle_view_notifications()
             elif action == 'orderFood':
@@ -64,6 +65,13 @@ def handle_client(client_socket, client_address):
                 response = sf.handle_give_feedback(request_data)
             elif action == 'requestFeedbackItems':
                 response = sf.handle_request_feedback_items(request_data)
+            elif action == 'check_detailed_feedback':
+                response = drh.check_detailed_feedback(request_data)
+            elif action == 'submit_detailed_feedback':
+                response = drh.submit_detailed_feedback(request_data)
+            elif action == 'updateProfile':
+                response = fpu.update_profile(request_data)
+
 
             else:
                 response = {"status": "error", "message": "Invalid action"}
