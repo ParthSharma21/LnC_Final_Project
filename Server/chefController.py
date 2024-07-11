@@ -1,6 +1,6 @@
 import RecommendationEngine.RecommendationEngine as re
-import serverFunctions as sf
-import detailedReviewHandler as drh
+import Server.serverFunctions as sf
+import Server.detailedReviewHandler as drh
 
 def getRecommendedFoodItems():
     return re.getRecommendedFoodItems()

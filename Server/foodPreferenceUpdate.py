@@ -1,9 +1,9 @@
-# foodPreferenceUpdate.py
-
 import Server.databaseFunctions as db
+from mysql.connector import Error
 
 def update_profile(request_data):
     try:
+
         user_id = request_data['userID']
         food_type = request_data['foodType']
         spice_level = request_data['spiceLevel']
@@ -20,7 +20,6 @@ def update_profile(request_data):
         result = cursor.fetchone()
 
         if result:
-
             query = """
                 UPDATE UserPreference
                 SET FoodType = %s, SpiceLevel = %s, IsSweet = %s, CusineType = %s
@@ -28,7 +27,6 @@ def update_profile(request_data):
             """
             cursor.execute(query, (food_type, spice_level, sweet_preference, cuisine_type, user_id))
         else:
-
             query = """
                 INSERT INTO UserPreference (UserID, FoodType, SpiceLevel, IsSweet, CusineType)
                 VALUES (%s, %s, %s, %s, %s)
@@ -41,5 +39,7 @@ def update_profile(request_data):
 
         return {"status": "success", "message": "Profile updated successfully"}
 
+    except Error as e:
+        return {"status": "error", "message": f"Database error: {e}"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"An error occurred: {e}"}

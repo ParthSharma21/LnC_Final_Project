@@ -3,13 +3,13 @@ import threading
 import json
 import Server.authenticationAndLogin as Login
 import Server.databaseFunctions as db
-import serverFunctions as sf
+import Server.serverFunctions as sf
 import RecommendationEngine.RecommendationEngine as re
-import detailedReviewHandler as drh
-import foodPreferenceUpdate as fpu
-import adminController as ac
-import chefController as cc
-import employeeController as ec
+import Server.detailedReviewHandler as drh
+import Server.foodPreferenceUpdate as fpu
+import Server.adminController as ac
+import Server.chefController as cc
+import Server.employeeController as ec
 
 # Server host and port
 HOST = '127.0.0.1'
@@ -26,10 +26,11 @@ def handle_client(client_socket, client_address):
             
             request_data = json.loads(request_data)
             action = request_data.get('action')
-            
-            if action == 'login':
+
+            if not action:
+                response = {"status": "error", "message": "No action specified"}
+            elif action == 'login':
                 response = sf.handle_login(request_data)
-                
             elif action == 'addFoodItem':
                 response = ac.handle_add_food_item(request_data)
             elif action == 'updateFoodItem':
@@ -38,6 +39,7 @@ def handle_client(client_socket, client_address):
                 response = ac.handle_delete_food_item(request_data)
             elif action == 'viewMenu':
                 response = ac.handle_view_menu()
+
 
             elif action == 'getRecommendedFoodItems':
                 response = cc.getRecommendedFoodItems()
@@ -53,7 +55,8 @@ def handle_client(client_socket, client_address):
                 response = cc.discardFoodItem(request_data)
             elif action == "requestDetailedReview":
                 response = cc.requestDetailedReview(request_data)
-            
+
+
             elif action == 'viewDailyMenu':
                 response = ec.viewDailyMenu(request_data)
             elif action == 'viewNotifications':
@@ -70,31 +73,38 @@ def handle_client(client_socket, client_address):
                 response = ec.submitDetailedFeedback(request_data)
             elif action == 'updateProfile':
                 response = fpu.update_profile(request_data)
-
             else:
                 response = {"status": "error", "message": "Invalid action"}
 
-            print(response)
             response_json = json.dumps(response)
             client_socket.send(response_json.encode('utf-8'))
         
+        except json.JSONDecodeError:
+            response = {"status": "error", "message": "Invalid JSON format"}
+            client_socket.send(json.dumps(response).encode('utf-8'))
         except ConnectionResetError:
             break
+        except Exception as e:
+            response = {"status": "error", "message": f"An error occurred: {e}"}
+            client_socket.send(json.dumps(response).encode('utf-8'))
 
     print(f"[DISCONNECTED] {client_address} disconnected.")
     client_socket.close()
 
 def start_server():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((HOST, PORT))
-    server.listen(5)
-    print(f"[LISTENING] Server is listening on {HOST}:{PORT}")
-    
-    while True:
-        client_socket, client_address = server.accept()
-        client_thread = threading.Thread(target=handle_client, args=(client_socket, client_address))
-        client_thread.start()
-        print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
+    try:
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind((HOST, PORT))
+        server.listen(5)
+        print(f"[LISTENING] Server is listening on {HOST}:{PORT}")
+        
+        while True:
+            client_socket, client_address = server.accept()
+            client_thread = threading.Thread(target=handle_client, args=(client_socket, client_address))
+            client_thread.start()
+            print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
+    except Exception as e:
+        print(f"An error occurred while starting the server: {e}")
 
 if __name__ == "__main__":
     start_server()

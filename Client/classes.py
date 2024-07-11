@@ -1,5 +1,3 @@
-# classes.py
-
 import Server.databaseFunctions as df
 from mysql.connector import Error
 # import recommendationEngine as RE
@@ -38,6 +36,6 @@ class Chef(user):
     def __init__(self, userID, name, password):
         super().__init__(userID, name, password, "Chef")
 
-class employee(user):
+class Employee(user):
     def __init__(self, userID, name, password):
         super().__init__(userID, name, password, "Employee")

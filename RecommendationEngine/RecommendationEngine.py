@@ -59,5 +59,5 @@ def getRecommendedFoodItems():
     else:
         return {"status": "success", "data": "No Recommendation."}
 
-# Test the function
+
 # print(getRecommendedFoodItems())

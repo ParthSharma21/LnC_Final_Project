@@ -1,5 +1,5 @@
-import serverFunctions as sf
-import detailedReviewHandler as drh
+import Server.serverFunctions as sf
+import Server.detailedReviewHandler as drh
 
 def viewDailyMenu(request_data):
     return sf.handle_view_daily_menu(request_data)

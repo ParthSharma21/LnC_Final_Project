@@ -1,6 +1,7 @@
 import Server.databaseFunctions as db
 import RecommendationEngine.RecommendationEngine as re
 from datetime import datetime
+from mysql.connector import Error
 
 def get_poor_performing_items(threshold=2, days=30):
     try:
@@ -35,11 +36,16 @@ def get_poor_performing_items(threshold=2, days=30):
 
         return {"status": "success", "data": items}
 
+    except Error as e:
+        return {"status": "error", "message": f"Database error: {e}"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"An error occurred: {e}"}
 
 def discard_food_item(request_data):
     try:
+        if 'foodItemID' not in request_data:
+            return {"status": "error", "message": "Missing food item ID"}
+
         food_item_id = request_data['foodItemID']
 
         connection = db.start_connection()
@@ -59,7 +65,11 @@ def discard_food_item(request_data):
         avg_sentiment = result[1] if result[1] is not None else 0
 
         cursor.execute("SELECT FoodItemName FROM Menu WHERE FoodItemID = %s AND IsDiscarded = FALSE", (food_item_id,))
-        food_item_name = cursor.fetchone()[0]
+        food_item = cursor.fetchone()
+        if not food_item:
+            return {"status": "error", "message": "Food item not found or already discarded"}
+
+        food_item_name = food_item[0]
 
         insert_query = """
             INSERT INTO DiscardMenuItems (FoodItemID, FoodItemName, AvgRating, AvgSentiment, DiscardDate)
@@ -76,8 +86,10 @@ def discard_food_item(request_data):
 
         return {"status": "success", "message": "Food item discarded successfully"}
 
+    except Error as e:
+        return {"status": "error", "message": f"Database error: {e}"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"An error occurred: {e}"}
 
 def generate_notification(user_id, message, notification_type=2):
     try:
@@ -101,11 +113,16 @@ def generate_notification(user_id, message, notification_type=2):
 
         return {"status": "success", "message": "Notification generated successfully", "notification_id": notification_id}
 
+    except Error as e:
+        return {"status": "error", "message": f"Database error: {e}"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"An error occurred: {e}"}
 
 def request_detailed_review(request_data):
     try:
+        if 'foodItemID' not in request_data or 'userID' not in request_data:
+            return {"status": "error", "message": "Missing food item ID or user ID"}
+
         food_item_id = request_data['foodItemID']
         user_id = request_data['userID']
 
@@ -116,7 +133,11 @@ def request_detailed_review(request_data):
         cursor = connection.cursor()
 
         cursor.execute("SELECT FoodItemName FROM Menu WHERE FoodItemID = %s AND IsDiscarded = FALSE", (food_item_id,))
-        food_item_name = cursor.fetchone()[0]
+        food_item = cursor.fetchone()
+        if not food_item:
+            return {"status": "error", "message": "Food item not found or already discarded"}
+
+        food_item_name = food_item[0]
 
         notification_message = f"Chef has requested detailed review for {food_item_name}."
         notification_response = generate_notification(user_id, notification_message)
@@ -137,11 +158,16 @@ def request_detailed_review(request_data):
 
         return {"status": "success", "message": "Detailed review requested successfully"}
 
+    except Error as e:
+        return {"status": "error", "message": f"Database error: {e}"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"An error occurred: {e}"}
 
 def check_detailed_feedback(request_data):
-    user_id = request_data['UserID']
+    user_id = request_data.get('UserID')
+    if not user_id:
+        return {"status": "error", "message": "User ID is required"}
+    
     try:
         connection = db.start_connection()
         if not connection:
@@ -161,21 +187,30 @@ def check_detailed_feedback(request_data):
 
         return {"status": "success", "items": items}
 
+    except Error as e:
+        return {"status": "error", "message": f"Database error: {e}"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"An error occurred: {e}"}
 
 def submit_detailed_feedback(request_data):
-    user_id = request_data['UserID']
-    notification_id = request_data['NotificationID']
-    food_item_id = request_data['FoodItemID']
-    feedback = request_data['detailedFeedback']
     try:
+        if 'UserID' not in request_data or 'NotificationID' not in request_data or 'FoodItemID' not in request_data or 'detailedFeedback' not in request_data:
+            return {"status": "error", "message": "Missing required fields"}
+        
+        user_id = request_data['UserID']
+        notification_id = request_data['NotificationID']
+        food_item_id = request_data['FoodItemID']
+        feedback = request_data['detailedFeedback']
+
         connection = db.start_connection()
         if not connection:
             return {"status": "error", "message": "Database connection failed"}
 
         cursor = connection.cursor()
         for entry in feedback:
+            if 'AnswerToQueID' not in entry or 'DetailedFeedback' not in entry:
+                return {"status": "error", "message": "Feedback entry missing required fields"}
+
             answer_to_que_id = entry['AnswerToQueID']
             detailed_feedback = entry['DetailedFeedback']
             query = """
@@ -189,5 +224,7 @@ def submit_detailed_feedback(request_data):
 
         return {"status": "success", "message": "Detailed feedback submitted successfully"}
 
+    except Error as e:
+        return {"status": "error", "message": f"Database error: {e}"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"An error occurred: {e}"}

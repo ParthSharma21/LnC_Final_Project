@@ -1,4 +1,4 @@
-import serverFunctions as sf
+import Server.serverFunctions as sf
 
 def handle_add_food_item(request_data):
     return sf.handle_add_food_item(request_data)
