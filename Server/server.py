@@ -15,83 +15,83 @@ import Server.employeeController as ec
 HOST = '127.0.0.1'
 PORT = 12345
 
-def handle_client(client_socket, client_address):
-    print(f"[NEW CONNECTION] {client_address} connected.")
+def handleClient(clientSocket, clientAddress):
+    print(f"[NEW CONNECTION] {clientAddress} connected.")
     
     while True:
         try:
-            request_data = client_socket.recv(1024).decode('utf-8')
-            if not request_data:
+            requestData = clientSocket.recv(1024).decode('utf-8')
+            if not requestData:
                 break
             
-            request_data = json.loads(request_data)
-            action = request_data.get('action')
+            requestData = json.loads(requestData)
+            action = requestData.get('action')
 
             if not action:
                 response = {"status": "error", "message": "No action specified"}
             elif action == 'login':
-                response = sf.handle_login(request_data)
+                response = sf.handleLogin(requestData)
             elif action == 'addFoodItem':
-                response = ac.handle_add_food_item(request_data)
+                response = ac.handleAddFoodItem(requestData)
             elif action == 'updateFoodItem':
-                response = ac.handle_update_food_item(request_data)
+                response = ac.handleUpdateFoodItem(requestData)
             elif action == 'deleteFoodItem':
-                response = ac.handle_delete_food_item(request_data)
+                response = ac.handleDeleteFoodItem(requestData)
             elif action == 'viewMenu':
-                response = ac.handle_view_menu()
+                response = ac.handleViewMenu()
 
 
             elif action == 'getRecommendedFoodItems':
                 response = cc.getRecommendedFoodItems()
             elif action == 'rolloutMenu':
-                response = cc.rolloutMenu(request_data)
+                response = cc.rolloutMenu(requestData)
             elif action == 'notifyEmployees':
-                response = cc.notifyEmployees(request_data)
+                response = cc.notifyEmployees(requestData)
             elif action == 'generateReport':
                 response = cc.generateReport()
             elif action == 'getPoorPerformingItems':
-                response = cc.getPoorPerformingItems(request_data)
+                response = cc.getPoorPerformingItems(requestData)
             elif action == "discardFoodItem":
-                response = cc.discardFoodItem(request_data)
+                response = cc.discardFoodItem(requestData)
             elif action == "requestDetailedReview":
-                response = cc.requestDetailedReview(request_data)
+                response = cc.requestDetailedReview(requestData)
 
 
             elif action == 'viewDailyMenu':
-                response = ec.viewDailyMenu(request_data)
+                response = ec.viewDailyMenu(requestData)
             elif action == 'viewNotifications':
                 response = ec.viewNotifications()
             elif action == 'orderFood':
-                response = ec.orderFood(request_data)
+                response = ec.orderFood(requestData)
             elif action == 'giveFeedback':
-                response = ec.giveFeedback(request_data)
+                response = ec.giveFeedback(requestData)
             elif action == 'requestFeedbackItems':
-                response = ec.requestFeedbackItems(request_data)
-            elif action == 'check_detailed_feedback':
-                response = ec.checkDetailedFeedback(request_data)
-            elif action == 'submit_detailed_feedback':
-                response = ec.submitDetailedFeedback(request_data)
+                response = ec.requestFeedbackItems(requestData)
+            elif action == 'checkDetailedFeedback':
+                response = ec.checkDetailedFeedback(requestData)
+            elif action == 'submitDetailedFeedback':
+                response = ec.submitDetailedFeedback(requestData)
             elif action == 'updateProfile':
-                response = fpu.update_profile(request_data)
+                response = fpu.updateProfile(requestData)
             else:
                 response = {"status": "error", "message": "Invalid action"}
 
-            response_json = json.dumps(response)
-            client_socket.send(response_json.encode('utf-8'))
+            responseJson = json.dumps(response)
+            clientSocket.send(responseJson.encode('utf-8'))
         
         except json.JSONDecodeError:
             response = {"status": "error", "message": "Invalid JSON format"}
-            client_socket.send(json.dumps(response).encode('utf-8'))
+            clientSocket.send(json.dumps(response).encode('utf-8'))
         except ConnectionResetError:
             break
         except Exception as e:
             response = {"status": "error", "message": f"An error occurred: {e}"}
-            client_socket.send(json.dumps(response).encode('utf-8'))
+            clientSocket.send(json.dumps(response).encode('utf-8'))
 
-    print(f"[DISCONNECTED] {client_address} disconnected.")
-    client_socket.close()
+    print(f"[DISCONNECTED] {clientAddress} disconnected.")
+    clientSocket.close()
 
-def start_server():
+def startServer():
     try:
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind((HOST, PORT))
@@ -99,12 +99,12 @@ def start_server():
         print(f"[LISTENING] Server is listening on {HOST}:{PORT}")
         
         while True:
-            client_socket, client_address = server.accept()
-            client_thread = threading.Thread(target=handle_client, args=(client_socket, client_address))
-            client_thread.start()
+            clientSocket, clientAddress = server.accept()
+            clientThread = threading.Thread(target=handleClient, args=(clientSocket, clientAddress))
+            clientThread.start()
             print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
     except Exception as e:
         print(f"An error occurred while starting the server: {e}")
 
 if __name__ == "__main__":
-    start_server()
+    startServer()

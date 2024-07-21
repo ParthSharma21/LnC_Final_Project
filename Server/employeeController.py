@@ -1,23 +1,24 @@
 import Server.serverFunctions as sf
 import Server.detailedReviewHandler as drh
+import employeeService as es
 
-def viewDailyMenu(request_data):
-    return sf.handle_view_daily_menu(request_data)
+def viewDailyMenu(requestData):
+    return es.handleViewDailyMenu(requestData)
 
 def viewNotifications():
-    return sf.handle_view_notifications()
+    return es.handleViewNotifications()
 
-def orderFood(request_data):
-    return sf.handle_order_food(request_data)
+def orderFood(requestData):
+    return es.handleOrderFood(requestData)
 
-def giveFeedback(request_data):
-    return sf.handle_give_feedback(request_data)
+def giveFeedback(requestData):
+    return es.handleGiveFeedback(requestData)
 
-def requestFeedbackItems(request_data):
-    return sf.handle_request_feedback_items(request_data)
+def requestFeedbackItems(requestData):
+    return es.handleRequestFeedbackItems(requestData)
 
-def checkDetailedFeedback(request_data):
-    return drh.check_detailed_feedback(request_data)
+def checkDetailedFeedback(requestData):
+    return drh.checkDetailedFeedback(requestData)
 
-def submitDetailedFeedback(request_data):
-    return drh.submit_detailed_feedback(request_data)
+def submitDetailedFeedback(requestData):
+    return drh.submitDetailedFeedback(requestData)

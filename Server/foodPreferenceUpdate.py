@@ -1,22 +1,22 @@
 import Server.databaseFunctions as db
 from mysql.connector import Error
 
-def update_profile(request_data):
+def updateProfile(requestData):
     try:
 
-        user_id = request_data['userID']
-        food_type = request_data['foodType']
-        spice_level = request_data['spiceLevel']
-        cuisine_type = request_data['cuisineType']
-        sweet_preference = request_data['sweetPreference']
+        userID = requestData['userID']
+        foodType = requestData['foodType']
+        spiceLevel = requestData['spiceLevel']
+        cuisineType = requestData['cuisineType']
+        sweetPreference = requestData['sweetPreference']
 
-        connection = db.start_connection()
+        connection = db.startConnection()
         if not connection:
             return {"status": "error", "message": "Database connection failed"}
 
         cursor = connection.cursor()
 
-        cursor.execute("SELECT UserPreferenceID FROM UserPreference WHERE UserID = %s", (user_id,))
+        cursor.execute("SELECT UserPreferenceID FROM UserPreference WHERE UserID = %s", (userID,))
         result = cursor.fetchone()
 
         if result:
@@ -25,17 +25,17 @@ def update_profile(request_data):
                 SET FoodType = %s, SpiceLevel = %s, IsSweet = %s, CusineType = %s
                 WHERE UserID = %s
             """
-            cursor.execute(query, (food_type, spice_level, sweet_preference, cuisine_type, user_id))
+            cursor.execute(query, (foodType, spiceLevel, sweetPreference, cuisineType, userID))
         else:
             query = """
                 INSERT INTO UserPreference (UserID, FoodType, SpiceLevel, IsSweet, CusineType)
                 VALUES (%s, %s, %s, %s, %s)
             """
-            cursor.execute(query, (user_id, food_type, spice_level, sweet_preference, cuisine_type))
+            cursor.execute(query, (userID, foodType, spiceLevel, sweetPreference, cuisineType))
 
         connection.commit()
         cursor.close()
-        db.close_connection(connection)
+        db.closeConnection(connection)
 
         return {"status": "success", "message": "Profile updated successfully"}
 

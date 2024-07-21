@@ -3,9 +3,9 @@ import RecommendationEngine.RecommendationEngine as re
 from datetime import datetime
 from mysql.connector import Error
 
-def get_poor_performing_items(threshold=2, days=30):
+def getPoorPerformingItems(threshold=2, days=30):
     try:
-        connection = db.start_connection()
+        connection = db.startConnection()
         if not connection:
             return {"status": "error", "message": "Database connection failed"}
 
@@ -28,11 +28,11 @@ def get_poor_performing_items(threshold=2, days=30):
                 AverageRating ASC, AverageSentiment ASC
         """
         cursor.execute(query, (days, threshold))
-        poor_performing_items = cursor.fetchall()
+        poorPerformingItems = cursor.fetchall()
         cursor.close()
-        db.close_connection(connection)
+        db.closeConnection(connection)
 
-        items = [{"FoodItemID": item[0], "FoodItemName": item[1], "AverageRating": re.decimal_to_float(item[2]), "AverageSentiment": item[3]} for item in poor_performing_items]
+        items = [{"FoodItemID": item[0], "FoodItemName": item[1], "AverageRating": re.decimalToFloat(item[2]), "AverageSentiment": item[3]} for item in poorPerformingItems]
 
         return {"status": "success", "data": items}
 
@@ -41,14 +41,14 @@ def get_poor_performing_items(threshold=2, days=30):
     except Exception as e:
         return {"status": "error", "message": f"An error occurred: {e}"}
 
-def discard_food_item(request_data):
+def discardFoodItem(requestData):
     try:
-        if 'foodItemID' not in request_data:
+        if 'foodItemID' not in requestData:
             return {"status": "error", "message": "Missing food item ID"}
 
-        food_item_id = request_data['foodItemID']
+        foodItemID = requestData['foodItemID']
 
-        connection = db.start_connection()
+        connection = db.startConnection()
         if not connection:
             return {"status": "error", "message": "Database connection failed"}
 
@@ -59,30 +59,30 @@ def discard_food_item(request_data):
             FROM Feedback f
             WHERE f.FoodItemID = %s
         """
-        cursor.execute(query, (food_item_id,))
+        cursor.execute(query, (foodItemID,))
         result = cursor.fetchone()
-        avg_rating = result[0] if result[0] is not None else 0
-        avg_sentiment = result[1] if result[1] is not None else 0
+        avgRating = result[0] if result[0] is not None else 0
+        avgSentiment = result[1] if result[1] is not None else 0
 
-        cursor.execute("SELECT FoodItemName FROM Menu WHERE FoodItemID = %s AND IsDiscarded = FALSE", (food_item_id,))
-        food_item = cursor.fetchone()
-        if not food_item:
+        cursor.execute("SELECT FoodItemName FROM Menu WHERE FoodItemID = %s AND IsDiscarded = FALSE", (foodItemID,))
+        foodItem = cursor.fetchone()
+        if not foodItem:
             return {"status": "error", "message": "Food item not found or already discarded"}
 
-        food_item_name = food_item[0]
+        foodItemName = foodItem[0]
 
-        insert_query = """
+        insertQuery = """
             INSERT INTO DiscardMenuItems (FoodItemID, FoodItemName, AvgRating, AvgSentiment, DiscardDate)
             VALUES (%s, %s, %s, %s, NOW())
         """
-        cursor.execute(insert_query, (food_item_id, food_item_name, avg_rating, avg_sentiment))
+        cursor.execute(insertQuery, (foodItemID, foodItemName, avgRating, avgSentiment))
 
-        update_menu_query = "UPDATE Menu SET IsDiscarded = TRUE WHERE FoodItemID = %s"
-        cursor.execute(update_menu_query, (food_item_id,))
+        updateMenuQuery = "UPDATE Menu SET IsDiscarded = TRUE WHERE FoodItemID = %s"
+        cursor.execute(updateMenuQuery, (foodItemID,))
 
         connection.commit()
         cursor.close()
-        db.close_connection(connection)
+        db.closeConnection(connection)
 
         return {"status": "success", "message": "Food item discarded successfully"}
 
@@ -91,9 +91,9 @@ def discard_food_item(request_data):
     except Exception as e:
         return {"status": "error", "message": f"An error occurred: {e}"}
 
-def generate_notification(user_id, message, notification_type=2):
+def generateNotification(userID, message, notificationType=2):
     try:
-        connection = db.start_connection()
+        connection = db.startConnection()
         if not connection:
             return {"status": "error", "message": "Database connection failed"}
 
@@ -102,59 +102,59 @@ def generate_notification(user_id, message, notification_type=2):
             INSERT INTO Notifications (NotificationMessage, NotificationGeneratedAtTimeStamp, GeneratedByUserID, NotificationType)
             VALUES (%s, %s, %s, %s)
         """
-        cursor.execute(query, (message, datetime.now(), user_id, notification_type))
+        cursor.execute(query, (message, datetime.now(), userID, notificationType))
         connection.commit()
 
         cursor.execute("SELECT MAX(NotificationID) FROM Notifications")
-        notification_id = cursor.fetchone()[0]
+        notificationID = cursor.fetchone()[0]
 
         cursor.close()
-        db.close_connection(connection)
+        db.closeConnection(connection)
 
-        return {"status": "success", "message": "Notification generated successfully", "notification_id": notification_id}
+        return {"status": "success", "message": "Notification generated successfully", "notificationID": notificationID}
 
     except Error as e:
         return {"status": "error", "message": f"Database error: {e}"}
     except Exception as e:
         return {"status": "error", "message": f"An error occurred: {e}"}
 
-def request_detailed_review(request_data):
+def requestDetailedReview(requestData):
     try:
-        if 'foodItemID' not in request_data or 'userID' not in request_data:
+        if 'foodItemID' not in requestData or 'userID' not in requestData:
             return {"status": "error", "message": "Missing food item ID or user ID"}
 
-        food_item_id = request_data['foodItemID']
-        user_id = request_data['userID']
+        foodItemID = requestData['foodItemID']
+        userID = requestData['userID']
 
-        connection = db.start_connection()
+        connection = db.startConnection()
         if not connection:
             return {"status": "error", "message": "Database connection failed"}
 
         cursor = connection.cursor()
 
-        cursor.execute("SELECT FoodItemName FROM Menu WHERE FoodItemID = %s AND IsDiscarded = FALSE", (food_item_id,))
-        food_item = cursor.fetchone()
-        if not food_item:
+        cursor.execute("SELECT FoodItemName FROM Menu WHERE FoodItemID = %s AND IsDiscarded = FALSE", (foodItemID,))
+        foodItem = cursor.fetchone()
+        if not foodItem:
             return {"status": "error", "message": "Food item not found or already discarded"}
 
-        food_item_name = food_item[0]
+        foodItemName = foodItem[0]
 
-        notification_message = f"Chef has requested detailed review for {food_item_name}."
-        notification_response = generate_notification(user_id, notification_message)
-        if notification_response["status"] == "error":
-            return notification_response
+        notificationMessage = f"Chef has requested detailed review for {foodItemName}."
+        notificationResponse = generateNotification(userID, notificationMessage)
+        if notificationResponse["status"] == "error":
+            return notificationResponse
 
-        notification_id = notification_response["notification_id"]
+        notificationID = notificationResponse["notificationID"]
 
         query = """
             INSERT INTO DetailedReviewRequiredItem(FoodItemID, FoodItemName, NotificationID)
             VALUES (%s, %s, %s)
         """
-        cursor.execute(query, (food_item_id, food_item_name, notification_id))
+        cursor.execute(query, (foodItemID, foodItemName, notificationID))
         connection.commit()
 
         cursor.close()
-        db.close_connection(connection)
+        db.closeConnection(connection)
 
         return {"status": "success", "message": "Detailed review requested successfully"}
 
@@ -163,13 +163,13 @@ def request_detailed_review(request_data):
     except Exception as e:
         return {"status": "error", "message": f"An error occurred: {e}"}
 
-def check_detailed_feedback(request_data):
-    user_id = request_data.get('UserID')
-    if not user_id:
+def checkDetailedFeedback(requestData):
+    userID = requestData.get('UserID')
+    if not userID:
         return {"status": "error", "message": "User ID is required"}
     
     try:
-        connection = db.start_connection()
+        connection = db.startConnection()
         if not connection:
             return {"status": "error", "message": "Database connection failed"}
 
@@ -180,10 +180,10 @@ def check_detailed_feedback(request_data):
             LEFT JOIN DetailedFeedback df ON dri.NotificationID = df.NotificationID AND df.UserID = %s
             WHERE df.DetailedFeedbackID IS NULL
         """
-        cursor.execute(query, (user_id,))
+        cursor.execute(query, (userID,))
         items = cursor.fetchall()
         cursor.close()
-        db.close_connection(connection)
+        db.closeConnection(connection)
 
         return {"status": "success", "items": items}
 
@@ -192,17 +192,17 @@ def check_detailed_feedback(request_data):
     except Exception as e:
         return {"status": "error", "message": f"An error occurred: {e}"}
 
-def submit_detailed_feedback(request_data):
+def submitDetailedFeedback(requestData):
     try:
-        if 'UserID' not in request_data or 'NotificationID' not in request_data or 'FoodItemID' not in request_data or 'detailedFeedback' not in request_data:
+        if 'UserID' not in requestData or 'NotificationID' not in requestData or 'FoodItemID' not in requestData or 'detailedFeedback' not in requestData:
             return {"status": "error", "message": "Missing required fields"}
         
-        user_id = request_data['UserID']
-        notification_id = request_data['NotificationID']
-        food_item_id = request_data['FoodItemID']
-        feedback = request_data['detailedFeedback']
+        userID = requestData['UserID']
+        notificationID = requestData['NotificationID']
+        foodItemID = requestData['FoodItemID']
+        feedback = requestData['detailedFeedback']
 
-        connection = db.start_connection()
+        connection = db.startConnection()
         if not connection:
             return {"status": "error", "message": "Database connection failed"}
 
@@ -211,16 +211,16 @@ def submit_detailed_feedback(request_data):
             if 'AnswerToQueID' not in entry or 'DetailedFeedback' not in entry:
                 return {"status": "error", "message": "Feedback entry missing required fields"}
 
-            answer_to_que_id = entry['AnswerToQueID']
-            detailed_feedback = entry['DetailedFeedback']
+            answerToQueID = entry['AnswerToQueID']
+            detailedFeedback = entry['DetailedFeedback']
             query = """
                 INSERT INTO DetailedFeedback (NotificationID, UserID, FoodItemID, AnswerToQueID, DetailedFeedback)
                 VALUES (%s, %s, %s, %s, %s)
             """
-            cursor.execute(query, (notification_id, user_id, food_item_id, answer_to_que_id, detailed_feedback))
+            cursor.execute(query, (notificationID, userID, foodItemID, answerToQueID, detailedFeedback))
         connection.commit()
         cursor.close()
-        db.close_connection(connection)
+        db.closeConnection(connection)
 
         return {"status": "success", "message": "Detailed feedback submitted successfully"}
 

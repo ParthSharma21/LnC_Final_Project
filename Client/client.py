@@ -7,7 +7,7 @@ import ClientFunctions as cf
 HOST = '127.0.0.1'
 PORT = 12345
 
-def main_menu():
+def mainMenu():
     print("\nWelcome to Food Management System!!\n")
     print("Enter User type:")
     print("1. Admin")
@@ -17,12 +17,12 @@ def main_menu():
     userType = input("Enter your choice: ")
     return userType
 
-def get_user_credentials():
+def getUserCredentials():
     userID = input("Enter ID: ")
     password = input("Enter Password: ")
     return userID, password
 
-def handle_response(response, client):
+def handleResponse(response, client):
     if response["status"] == "error":
         print(response["message"])
     else:
@@ -41,13 +41,13 @@ def handle_response(response, client):
             employeeUser = classes.Employee(userID, userName, userPassword)
             cf.employeeHandler(employeeUser, client)
 
-def start_client():
+def startClient():
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((HOST, PORT))
     
     while True:
         try:
-            userType = main_menu()
+            userType = mainMenu()
             if not userType.isdigit() or int(userType) not in [1, 2, 3, 4]:
                 print("Invalid choice. Please enter a valid option.")
                 continue
@@ -57,7 +57,7 @@ def start_client():
                 print("Exiting...")
                 break
 
-            userID, password = get_user_credentials()
+            userID, password = getUserCredentials()
 
             if not userID or not password:
                 print("ID and Password cannot be empty.")
@@ -69,11 +69,11 @@ def start_client():
             response = client.recv(1024).decode('utf-8')
             response = json.loads(response)
 
-            handle_response(response, client)
+            handleResponse(response, client)
         except Exception as e:
             print(f"An error occurred: {e}")
 
     client.close()
 
 if __name__ == "__main__":
-    start_client()
+    startClient()

@@ -3,13 +3,14 @@ import mysql.connector
 from mysql.connector import Error
 
 def UserLogin(user):
+    adminType, chefType, employeeType = 1,2,3 
     try:        
-        user_type = user.get('userType')
-        if user_type == 1:
+        userType = user.get('userType')
+        if userType == adminType:
             return AdminLogin(user['userID'], user['password'])
-        elif user_type == 2:
+        elif userType == chefType:
             return ChefLogin(user['userID'], user['password'])
-        elif user_type == 3:
+        elif userType == employeeType:
             return EmployeeLogin(user['userID'], user['password'])
         else:
             return {"status": "error", "message": "Invalid user type"}
@@ -18,7 +19,7 @@ def UserLogin(user):
 
 def Authenticate(UserType, UserID, UserPassword):
     try:
-        connection = df.start_connection()
+        connection = df.startConnection()
         if not connection:
             return {"status": "error", "message": "Database connection failed"}
 
@@ -29,7 +30,7 @@ def Authenticate(UserType, UserID, UserPassword):
 
         result = cursor.fetchone()
         cursor.close()
-        df.close_connection(connection)
+        df.closeConnection(connection)
 
         if result:
             return {"status": "success", "data": result}
@@ -60,11 +61,11 @@ def EmployeeLogin(EmployeeID, EmployeePassword):
 
 if __name__ == "__main__":
     try:
-        user_type = int(input("Enter User Type (1 for Admin, 2 for Chef, 3 for Employee): "))
-        if user_type not in [1, 2, 3]:
+        userType = int(input("Enter User Type (1 for Admin, 2 for Chef, 3 for Employee): "))
+        if userType not in [1, 2, 3]:
             print("Invalid user type")
         else:
-            UserLogin(user_type)
+            UserLogin(userType)
     except ValueError:
         print("Please enter a valid integer for user type")
     except Exception as e:

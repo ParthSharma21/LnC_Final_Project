@@ -1,13 +1,13 @@
 import Server.databaseFunctions as df
 from decimal import Decimal
 
-def decimal_to_float(number):
+def decimalToFloat(number):
     if isinstance(number, Decimal):
         return float(number)
     return number
 
 def getRecommendedFoodItems():
-    connection = df.start_connection()
+    connection = df.startConnection()
 
     if not connection:
         return {"status": "error", "message": "Database connection failed"}
@@ -39,23 +39,23 @@ def getRecommendedFoodItems():
             LIMIT 5
         """)
         
-    recommended_items = cursor.fetchall()
-    df.close_connection(connection)
+    recommendedItems = cursor.fetchall()
+    df.closeConnection(connection)
 
-    if recommended_items:
-        recommended_items_list = []
-        for item in recommended_items:
-            recommended_items_list.append({
+    if recommendedItems:
+        recommendedItemsList = []
+        for item in recommendedItems:
+            recommendedItemsList.append({
                 "foodItemID": item[0],
                 "foodItemName": item[1],
-                "foodItemPrice": decimal_to_float(item[2]),
-                "foodItemAverageRating": decimal_to_float(item[3]),
-                "foodItemAverageSentiment": decimal_to_float(item[4]),
+                "foodItemPrice": decimalToFloat(item[2]),
+                "foodItemAverageRating": decimalToFloat(item[3]),
+                "foodItemAverageSentiment": decimalToFloat(item[4]),
                 "foodItemBoughtCount": item[5],
-                "foodItemRecommendationScore": round(decimal_to_float(item[6]), 2)
+                "foodItemRecommendationScore": round(decimalToFloat(item[6]), 2)
             })
 
-        return {"status": "success", "data": recommended_items_list}
+        return {"status": "success", "data": recommendedItemsList}
     else:
         return {"status": "success", "data": "No Recommendation."}
 

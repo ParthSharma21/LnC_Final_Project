@@ -1,25 +1,24 @@
-# SentimentalAnalyser.py
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-def analyze_sentiment(comment):
+def analyzeSentiment(comment):
     analyzer = SentimentIntensityAnalyzer()
-    sentiment_dict = analyzer.polarity_scores(comment)
+    sentimentDict = analyzer.polarity_scores(comment)
     
     # Determine sentiment based on compound score
-    # if sentiment_dict['compound'] >= 0.5:
-    #     # print(sentiment_dict['compound'])
+    # if sentimentDict['compound'] >= 0.5:
+    #     # print(sentimentDict['compound'])
     #     sentiment = "Positive"
-    # elif sentiment_dict['compound'] <= -0.5:
-    #     # print(sentiment_dict['compound'])
+    # elif sentimentDict['compound'] <= -0.5:
+    #     # print(sentimentDict['compound'])
     #     sentiment = "Negative"
     # else:
-    #     # print(sentiment_dict['compound'])
+    #     # print(sentimentDict['compound'])
     #     sentiment = "Neutral"
     
-    return sentiment_dict['compound'] # sentiment
+    return sentimentDict['compound'] # sentiment
 
 # comment = 'The parathas were amazing'
-# print(analyze_sentiment(comment))  # Output: Positive
+# print(analyzeSentiment(comment))  
 
 # comment = "This is the worst experience I've ever had."
-# print(analyze_sentiment(comment))  # Output: Negative
+# print(analyzeSentiment(comment))  

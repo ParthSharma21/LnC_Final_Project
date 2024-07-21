@@ -1,24 +1,25 @@
 import RecommendationEngine.RecommendationEngine as re
 import Server.serverFunctions as sf
 import Server.detailedReviewHandler as drh
+import Server.chefService as cs
 
 def getRecommendedFoodItems():
     return re.getRecommendedFoodItems()
 
-def rolloutMenu(request_data):
-    return sf.rolloutMenu(request_data)
+def rolloutMenu(requestData):
+    return cs.rolloutMenu(requestData)
 
-def notifyEmployees(request_data):
-    return sf.notifyEmployees(request_data)
+def notifyEmployees(requestData):
+    return cs.notifyEmployees(requestData)
 
 def generateReport():
-    return sf.generateReport()
+    return cs.generateReport()
 
-def getPoorPerformingItems(request_data):
-    return drh.get_poor_performing_items(request_data.get('threshold', 2), request_data.get('days', 30))
+def getPoorPerformingItems(requestData):
+    return drh.getPoorPerformingItems(requestData.get('threshold', 2), requestData.get('days', 30))
 
-def discardFoodItem(request_data):
-    return drh.discard_food_item(request_data)
+def discardFoodItem(requestData):
+    return drh.discardFoodItem(requestData)
 
-def requestDetailedReview(request_data):
-    return drh.request_detailed_review(request_data)
+def requestDetailedReview(requestData):
+    return drh.requestDetailedReview(requestData)

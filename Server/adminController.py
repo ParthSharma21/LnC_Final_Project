@@ -1,13 +1,14 @@
 import Server.serverFunctions as sf
+import adminService
 
-def handle_add_food_item(request_data):
-    return sf.handle_add_food_item(request_data)
+def handleAddFoodItem(requestData):
+    return adminService.handleAddFoodItem(requestData)
 
-def handle_update_food_item(request_data):
-    return sf.handle_update_food_item(request_data)
+def handleUpdateFoodItem(requestData):
+    return adminService.handleUpdateFoodItem(requestData)
 
-def handle_delete_food_item(request_data):
-    return sf.handle_delete_food_item(request_data)
+def handleDeleteFoodItem(requestData):
+    return adminService.handleDeleteFoodItem(requestData)
 
-def handle_view_menu():
-    return sf.handle_view_menu()
+def handleViewMenu():
+    return adminService.handleViewMenu()
