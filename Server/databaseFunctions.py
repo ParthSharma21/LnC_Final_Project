@@ -1,8 +1,7 @@
-############ databaseFunctions.py
 import mysql.connector
 from mysql.connector import Error
 
-def start_connection():
+def startConnection():
     try:
         connection = mysql.connector.connect(
             host='localhost',
@@ -16,6 +15,6 @@ def start_connection():
         print(f"Error: {e}")
         return None
 
-def close_connection(connection):
+def closeConnection(connection):
     if connection.is_connected():
         connection.close()

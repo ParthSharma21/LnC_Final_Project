@@ -1,89 +1,110 @@
-#######    server.py
-
 import socket
 import threading
 import json
 import Server.authenticationAndLogin as Login
 import Server.databaseFunctions as db
-import serverFunctions as sf
+import Server.serverFunctions as sf
 import RecommendationEngine.RecommendationEngine as re
+import Server.detailedReviewHandler as drh
+import Server.foodPreferenceUpdate as fpu
+import Server.adminController as ac
+import Server.chefController as cc
+import Server.employeeController as ec
 
 # Server host and port
 HOST = '127.0.0.1'
 PORT = 12345
 
-def handle_client(client_socket, client_address):
-    print(f"[NEW CONNECTION] {client_address} connected.")
+def handleClient(clientSocket, clientAddress):
+    print(f"[NEW CONNECTION] {clientAddress} connected.")
     
     while True:
         try:
-            request_data = client_socket.recv(1024).decode('utf-8')
-            if not request_data:
+            requestData = clientSocket.recv(1024).decode('utf-8')
+            if not requestData:
                 break
             
-            request_data = json.loads(request_data)
-            action = request_data.get('action')
-            
-            if action == 'login':
-                response = sf.handle_login(request_data)
-            elif action == 'addFoodItem':
-                response = sf.handle_add_food_item(request_data)
-            elif action == 'updateFoodItem':
-                response = sf.handle_update_food_item(request_data)
-            elif action == 'deleteFoodItem':
-                response = sf.handle_delete_food_item(request_data)
-            elif action == 'viewMenu':
-                response = sf.handle_view_menu()
+            requestData = json.loads(requestData)
+            action = requestData.get('action')
 
-            
+            if not action:
+                response = {"status": "error", "message": "No action specified"}
+            elif action == 'login':
+                response = sf.handleLogin(requestData)
+            elif action == 'addFoodItem':
+                response = ac.handleAddFoodItem(requestData)
+            elif action == 'updateFoodItem':
+                response = ac.handleUpdateFoodItem(requestData)
+            elif action == 'deleteFoodItem':
+                response = ac.handleDeleteFoodItem(requestData)
+            elif action == 'viewMenu':
+                response = ac.handleViewMenu()
+
+
             elif action == 'getRecommendedFoodItems':
-                response = re.getRecommendedFoodItems()
+                response = cc.getRecommendedFoodItems()
             elif action == 'rolloutMenu':
-                response = sf.rolloutMenu(request_data)
+                response = cc.rolloutMenu(requestData)
             elif action == 'notifyEmployees':
-                response = sf.notifyEmployees(request_data)
+                response = cc.notifyEmployees(requestData)
             elif action == 'generateReport':
-                response = sf.generateReport()
+                response = cc.generateReport()
+            elif action == 'getPoorPerformingItems':
+                response = cc.getPoorPerformingItems(requestData)
+            elif action == "discardFoodItem":
+                response = cc.discardFoodItem(requestData)
+            elif action == "requestDetailedReview":
+                response = cc.requestDetailedReview(requestData)
 
 
             elif action == 'viewDailyMenu':
-                response = sf.handle_view_daily_menu()
+                response = ec.viewDailyMenu(requestData)
             elif action == 'viewNotifications':
-                response = sf.handle_view_notifications()
+                response = ec.viewNotifications()
             elif action == 'orderFood':
-                response = sf.handle_order_food(request_data)
+                response = ec.orderFood(requestData)
             elif action == 'giveFeedback':
-                response = sf.handle_give_feedback(request_data)
+                response = ec.giveFeedback(requestData)
             elif action == 'requestFeedbackItems':
-                response = sf.handle_request_feedback_items(request_data)
-
+                response = ec.requestFeedbackItems(requestData)
+            elif action == 'checkDetailedFeedback':
+                response = ec.checkDetailedFeedback(requestData)
+            elif action == 'submitDetailedFeedback':
+                response = ec.submitDetailedFeedback(requestData)
+            elif action == 'updateProfile':
+                response = fpu.updateProfile(requestData)
             else:
                 response = {"status": "error", "message": "Invalid action"}
 
-            # Respond to the client
-
-            print(response)
-            response_json = json.dumps(response)
-            client_socket.send(response_json.encode('utf-8'))
+            responseJson = json.dumps(response)
+            clientSocket.send(responseJson.encode('utf-8'))
         
+        except json.JSONDecodeError:
+            response = {"status": "error", "message": "Invalid JSON format"}
+            clientSocket.send(json.dumps(response).encode('utf-8'))
         except ConnectionResetError:
             break
+        except Exception as e:
+            response = {"status": "error", "message": f"An error occurred: {e}"}
+            clientSocket.send(json.dumps(response).encode('utf-8'))
 
-    print(f"[DISCONNECTED] {client_address} disconnected.")
-    client_socket.close()
+    print(f"[DISCONNECTED] {clientAddress} disconnected.")
+    clientSocket.close()
 
-
-def start_server():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((HOST, PORT))
-    server.listen(5)
-    print(f"[LISTENING] Server is listening on {HOST}:{PORT}")
-    
-    while True:
-        client_socket, client_address = server.accept()
-        client_thread = threading.Thread(target=handle_client, args=(client_socket, client_address))
-        client_thread.start()
-        print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
+def startServer():
+    try:
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind((HOST, PORT))
+        server.listen(5)
+        print(f"[LISTENING] Server is listening on {HOST}:{PORT}")
+        
+        while True:
+            clientSocket, clientAddress = server.accept()
+            clientThread = threading.Thread(target=handleClient, args=(clientSocket, clientAddress))
+            clientThread.start()
+            print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
+    except Exception as e:
+        print(f"An error occurred while starting the server: {e}")
 
 if __name__ == "__main__":
-    start_server()
+    startServer()
